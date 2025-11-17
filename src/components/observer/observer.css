@@ -1,0 +1,45 @@
+@property --bg-color {
+	syntax: "<color>";
+	inherits: false;
+	initial-value: green;
+}
+
+.redSquare {
+	width: 100px;
+	aspect-ratio: 1;
+	background-color: var(--bg-color);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: white;
+	font-weight: bold;
+	margin: 20px auto;
+	opacity: 0.9;
+}
+
+.section1 {
+	max-width: 600px;
+	margin: 0 auto;
+	padding: 20px;
+	text-align: center;
+}
+
+/* Animation de rotation */
+@keyframes spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* Classe appliquée lorsque le carré doit tourner */
+.rotating {
+	animation: spin 6s linear infinite;
+	
+}
+.notrotating {
+	--bg-color: red;
+	animation: none;
+}
