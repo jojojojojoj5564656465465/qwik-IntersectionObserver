@@ -1,50 +1,65 @@
 import {
   $,
   type Signal,
-  useSignal,
+  useComputed$,
+  useOnWindow,
   useStore,
   useTask$,
 } from "@builder.io/qwik";
 
+// Pour une meilleure lisibilité et pour suivre les bonnes pratiques Qwik,
+// on utilise useSignal pour stocker la réactivité.
+
 /**
- * Vérifie si un élément est au centre de l'écran.
+ * Vérifie si un élément est au centre de l'écran avec une tolérance relative.
  * @param elementREF Référence de l'élément à observer.
  * @returns Un signal booléen indiquant si l'élément est au centre de l'écran.
  */
-export function useIntersectionObserverIsCenterScreen(
-  elementREF: Signal<HTMLElement | undefined>
-) {
-  // Stocke les dimensions et la position de l'élément
-  const rect = useStore<Omit<DOMRect, "toJSON">>({
-    bottom: 0,
-    height: 0,
-    left: 0,
-    right: 0,
-    top: 0,
-    width: 0,
-    x: 0,
-    y: 0,
+export function useIntersectionObserverIsCenterScreen2(
+  elementREF: Signal<HTMLElement | undefined>,
+  onceObserver: boolean,
+  option?: IntersectionObserverInit
+): Signal<boolean | undefined> {
+  const isCenteredStore = useStore({
+    intersecting: false,
+    current: false,
+    hasBeen: false,
   });
 
-  // Signal pour indiquer si l'élément est au centre de l'écran
-  const isCentered = useSignal(false);
-
-  // Fonction pour vérifier si l'élément est au centre de l'écran
+  const checkIfHasBeenEverCentered = $(() => {
+    if (isCenteredStore.current && !isCenteredStore.hasBeen) {
+      isCenteredStore.hasBeen = true;
+    }
+  });
+  const centered = useComputed$(() => {
+    checkIfHasBeenEverCentered();
+    if (isCenteredStore) {
+      switch (onceObserver) {
+        case true:
+          return isCenteredStore.hasBeen;
+        case false:
+          return isCenteredStore.current;
+        default:
+          return false;
+      }
+    }
+  });
+  // LOGIQUE CENTRALE (utilisée par Scroll, Resize, et Task)
   const checkCentered = $(() => {
     const el = elementREF.value;
-    if (!el) return false;
+    if (!el) {
+      return;
+    }
+    const emoji = (x: boolean) => (x ? "✅" : "❌");
 
-    // Met à jour `rect` avec les dimensions et la position de l'élément
-    Object.assign(rect, el.getBoundingClientRect());
-
+    const rect: DOMRect = el.getBoundingClientRect();
     const windowHeight = window.innerHeight;
     const windowWidth = window.innerWidth;
-
-    // Logique pour vérifier si l'élément est au centre de l'écran
+    // Calcul du centre de l'élément
     const verticalCenter = rect.top + rect.height / 2;
     const horizontalCenter = rect.left + rect.width / 2;
 
-    // Seuil pour considérer que l'élément est au centre (par exemple, 20% de la hauteur/largeur de la fenêtre)
+    // Seuil de tolérance: 20% de la fenêtre (ajustez si nécessaire)
     const verticalThreshold = windowHeight * 0.2;
     const horizontalThreshold = windowWidth * 0.2;
 
@@ -56,42 +71,65 @@ export function useIntersectionObserverIsCenterScreen(
       horizontalCenter >= windowWidth / 2 - horizontalThreshold &&
       horizontalCenter <= windowWidth / 2 + horizontalThreshold;
 
-    isCentered.value = isVerticallyCentered && isHorizontallyCentered;
-    return isCentered.value;
+    // Mise à jour du signal réactif
+    isCenteredStore.current = isVerticallyCentered && isHorizontallyCentered;
+    ///checkIfHasBeenEverCentered();
+    // Log de débogage pour la surveillance
+    console.log(
+      `[Observer] ↕️ intersecting=${emoji(isCenteredStore.intersecting)} curr=${emoji(isCenteredStore.current)} hasBeen=${emoji(isCenteredStore.hasBeen)}`
+    );
   });
 
-  // Utilisation de `useTask$` pour observer les changements de `elementREF`
+  // 1. Gérer les événements de fenêtre (défilement et redimensionnement)
+  // Ces appels DOIVENT être au niveau supérieur du hook.
+  //useOnWindow("scroll", checkCentered);
+  useOnWindow("resize", checkCentered);
+  useOnWindow("scroll", checkCentered);
+
+  // 2. Gérer l'initialisation et l'IntersectionObserver
   useTask$(({ track }) => {
+    // Suit l'élément référé. Si elementREF.value change, la task redémarre.
     track(() => elementREF.value);
 
-    const el = elementREF.value;
-    if (!el) {
-        console.warn("No element Found");
-        return;
-    };
+    const el = elementREF.value as HTMLElement;
 
-    // Configuration de l'observateur d'intersection
+    // Initialisation
+    if (el) {
+      checkCentered();
+    } else {
+      return; // Sort si l'élément n'est pas encore monté
+    }
+
+
+    const fnObserver = $((entry: IntersectionObserverEntry) => {
+      if (entry.isIntersecting) {
+        checkCentered();
+        isCenteredStore.intersecting = true;
+      } else {
+        isCenteredStore.intersecting = false;
+      }
+    });
+
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            checkCentered();
-            
-          }
-        });
+        entries.forEach(fnObserver);
       },
-      { threshold: 1, rootMargin: "100px" }
+      {
+        threshold: option?.threshold || 0.5,
+        rootMargin: option?.rootMargin || "-50px",
+      }
     );
+
     observer.observe(el);
 
-    // if (isCentered.value===true) {
-    //   observer.unobserve(el)
-    // }
-    // Nettoyage : déconnecter l'observateur lorsque le composant est détruit
+    // Nettoyage : déconnecter l'observateur lorsque la task se termine
     return () => {
       observer.disconnect();
+      // On n'a pas besoin de désenregistrer les useOnWindow, Qwik le fait
+      // automatiquement quand le hook est détruit.
     };
   });
-  // Retourne le signal indiquant si l'élément est au centre de l'écran
-  return isCentered;
+ 
+
+  return centered;
 }

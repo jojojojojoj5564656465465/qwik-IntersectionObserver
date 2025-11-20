@@ -1,87 +1,28 @@
-import {
-  $,
-  component$,
-  type Signal,
-  useOnWindow,
-  useSignal,
-  useStyles$,
-  useTask$,
-} from "@builder.io/qwik";
+import { $, component$, useSignal, useStyles$ } from "@builder.io/qwik";
+import { useIntersectionObserverIsCenterScreen2 } from "./hook";
 import styles from "./observer.css?inline";
-
-/**
- *
- * @param element Ref of the elemenet you want to Observe
- * @returns Boolean
- * @description The goal it to see and animate if an element in in the center of the screen
- */
-function useIntersectionObserverIsCenterScreen(
-  elementREF: Signal<HTMLElement | undefined>
-): Signal<boolean> {
-  const rotating = useSignal<boolean>(false);
-  // Nouveau signal pour "une fois centré"
-  const hasBeenCentered = useSignal<boolean>(false);
-
-  const checkCentered = $(() => {
-    const el = elementREF.value;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-
-    const elCenterY = rect.top + rect.height / 2;
-    const elCenterX = rect.left + rect.width / 2;
-    const viewCenterY = window.innerHeight / 2;
-    const viewCenterX = window.innerWidth / 2;
-    const tolerance = 40; // tolérance en pixels pour considérer "centré"
-
-    // Vérifie si l'élément est centré
-    const isCurrentlyCentered =
-      Math.abs(elCenterY - viewCenterY) < tolerance &&
-      Math.abs(elCenterX - viewCenterX) < tolerance;
-
-    // Si l'élément est actuellement centré, mettez à jour hasBeenCentered
-    if (isCurrentlyCentered) {
-      hasBeenCentered.value = true;
-    }
-
-    // Le signal `rotating` suivra `hasBeenCentered`
-    rotating.value = hasBeenCentered.value;
-  });
-
-  useTask$(({ track }) => {
-    track(() => elementREF.value);
-    const el = elementREF.value;
-    if (!el) return;
-
-    const observer: IntersectionObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            checkCentered();
-          }
-        });
-      },
-      { threshold: 1, rootMargin: "100px" }
-    );
-    observer.observe(el);
-
-    checkCentered();
-
-    return () => {
-      observer.disconnect();
-    };
-  });
-  useOnWindow("scroll", checkCentered);
-  useOnWindow("resize", checkCentered);
-
-  // Retourne le signal `rotating` qui est maintenant basé sur `hasBeenCentered`
-  return rotating;
-}
 
 export default component$(() => {
   useStyles$(styles);
   const squareRef = useSignal<HTMLElement>();
 
-  const isInCenterOfScreen = useIntersectionObserverIsCenterScreen(squareRef);
+  const isInCenterOfScreen = useIntersectionObserverIsCenterScreen2(
+    squareRef,
+    false,
+    {
+      threshold: 0.9,
+    }
+  );
+  // const fnObserver = $((entry: IntersectionObserverEntry) => {
+  //   if (entry.isIntersecting) {
+  //    console.log("The square is intersecting the viewport.");
+  // }});
+
+  // const observer = new IntersectionObserver((entries) => {
+  //   entries.forEach(fnObserver);
+  // });
+
+  //  observer.observe(squareRef.value as Element);
   return (
     <section class="section1">
       <p>
@@ -98,12 +39,72 @@ export default component$(() => {
         sit? Autem cupiditate laudantium illum odio aliquam, debitis ad
         temporibus itaque quisquam ipsum aut nam officia exercitationem ratione
         impedit error suscipit in veniam quaerat accusantium nemo fugiat soluta!
+        Lorem ipsum dolor sit amet consectetur adipisicing elit. Illum, atque!
+        Eaque, quod tempore maxime commodi dolore ab tempora corrupti, eius,
+        blanditiis nobis laboriosam odio dignissimos provident voluptates
+        excepturi dolores nam! Fugiat assumenda, aspernatur hic ea non debitis
+        quo commodi ex molestiae veritatis voluptates sequi illum voluptate
+        incidunt error iste perspiciatis. Lorem ipsum dolor sit, amet
+        consectetur adipisicing elit. Ipsa, dolores aliquid blanditiis enim
+        suscipit maiores, aperiam voluptates quasi dolore dolor voluptatum
+        laborum laudantium quaerat aut quisquam labore quos molestiae vitae
+        fugiat nostrum earum dolorem. Earum sed velit in vitae rem, eius, ad,
+        magnam voluptates iure voluptatem officia! Odit magnam, voluptate
+        provident ratione, officiis maiores inventore deleniti doloribus tempore
+        aperiam delectus? Quo, incidunt. Laudantium ex exercitationem, totam
+        veniam non, praesentium vitae, illo quidem repellendus ullam illum eaque
+        minus quibusdam ratione optio? Quia omnis odit, eius ut non nobis
+        quisquam deserunt quae dolore in enim eligendi, fugit voluptates iure
+        impedit. Ex at corrupti non velit quia, sapiente nobis labore nam
+        voluptas esse consectetur itaque obcaecati? Fugit animi, aliquid
+        recusandae suscipit ratione tempore. Nemo perspiciatis est blanditiis
+        corrupti inventore soluta accusantium culpa quia sunt! Animi dolorum,
+        magnam, accusamus corporis similique voluptatem esse maiores laudantium
+        aperiam molestias veritatis eaque minus modi quidem consequatur
+        praesentium deserunt commodi? Provident quae sequi rerum, culpa
+        explicabo quo nulla quidem eligendi ea. Magni neque corporis, totam
+        recusandae ex cumque culpa pariatur dolor magnam itaque obcaecati ipsum
+        nihil, sunt dolores amet optio in rem eaque accusantium. Corrupti libero
+        incidunt sint reiciendis officia soluta quisquam fugit molestiae placeat
+        ad laborum labore, nisi, ullam maiores minima illum impedit expedita
+        suscipit provident a voluptatum? Impedit nulla consequuntur sunt quos
+        magni officia quisquam atque repudiandae maxime animi. Quae a, eligendi
+        itaque, iste consectetur nulla est, dolorem doloremque reprehenderit vel
+        pariatur sint dolore. Suscipit in, quisquam voluptate itaque officia
+        amet debitis mollitia. Natus, culpa suscipit, neque earum fugit, quos
+        maiores rem impedit numquam sint animi vel! Soluta officiis ullam sit
+        atque cumque? Perferendis error ullam amet aliquid, optio blanditiis,
+        necessitatibus odit molestias nobis neque minus fuga tempora enim
+        cupiditate quos facilis et fugit ipsam modi similique unde delectus! Vel
+        aut fugiat quia quidem porro, consequatur, modi dignissimos cupiditate
+        tempora itaque accusamus eius id maxime quisquam quos hic. Similique ut
+        tempora id! Optio quibusdam blanditiis nemo perspiciatis sunt!
+        Obcaecati, nobis magnam molestias fugiat velit tenetur deleniti
+        eligendi, consequuntur similique doloribus deserunt nemo error est
+        maiores debitis architecto repellat amet? Hic suscipit maiores sequi.
+        Veniam corporis consectetur explicabo quidem dolorem animi, error,
+        labore modi vel unde optio iste quaerat veritatis itaque id quis earum
+        iure? Non provident ea aliquid perferendis ab ad quisquam harum neque id
+        qui quae iusto, quibusdam, a expedita libero in numquam vitae facere,
+        sequi laudantium inventore! Eos vel ab nobis! Quas ipsa beatae
+        temporibus aut aliquid laborum fugit quae blanditiis rerum, numquam
+        ratione molestiae modi doloribus tempora id, porro exercitationem
+        doloremque molestias, reprehenderit eligendi totam! Distinctio, ratione
+        fuga dolorum recusandae iure perspiciatis iusto voluptatem accusamus.
+        Inventore at, modi animi vero cum dolor nesciunt expedita repellat
+        temporibus eligendi nisi facilis esse, aliquam eveniet possimus? Minima
+        alias magnam tenetur iusto, culpa maiores illo exercitationem. Tempore
+        cumque quaerat ipsa. Voluptatum, pariatur blanditiis. Reiciendis
+        necessitatibus deleniti voluptates voluptas cum perferendis ullam sunt
+        omnis quibusdam, exercitationem ut iste rerum quisquam enim quasi
+        doloribus numquam veritatis magni? Cum laudantium qui sapiente
+        exercitationem modi quisquam dicta perspiciatis optio nemo ea?
       </p>
       <span
         ref={squareRef}
         class={`redSquare ${isInCenterOfScreen.value ? "rotating" : "notrotating"}`}
       >
-        Carré rouge
+        {isInCenterOfScreen.value ? "true" : "false"}
       </span>
       <p>
         Lorem ipsum dolor sit amet consectetur adipisicing elit. Iusto
