@@ -6,9 +6,9 @@ import {
 	useStylesScoped$,
 	useTask$,
 } from "@builder.io/qwik";
-import { useIsCenterOfScreen } from "./center";
 import styles from "./main.css?inline";
 import { useIntersectionObserver } from "./useIntersectionObserver";
+import { useIsCenterOfScreen } from "./useIsCenterOfScreen";
 
 export const Square = component$((props: { id: number }) => {
 	useStylesScoped$(styles);

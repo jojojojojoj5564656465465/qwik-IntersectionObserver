@@ -64,11 +64,6 @@ export function useIsCenterOfScreen(
         checkCentered();
     });
 
-    // useTask$(({ track }) => {
-    //     track(() => isCentered.value);
-    //     if (onceObserver) {
-    //         isCentered.value = true;
-    //     }
-    // });
+
     return isCentered;
 }

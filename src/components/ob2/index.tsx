@@ -3,7 +3,7 @@ import { component$ } from "@builder.io/qwik";
 import { Square } from "./square";
 //import styles from "./main.css?inline";
 
-export const Obs2 = component$(() => {
+export default component$(() => {
   return (
     <section class="section-ob2">
       <h2>Composant Obs2</h2>
