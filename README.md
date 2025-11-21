@@ -1,65 +1,147 @@
-# Qwik City App ⚡️
+# Qwik IntersectionObserver Example
 
-- [Qwik Docs](https://qwik.dev/)
-- [Discord](https://qwik.dev/chat)
-- [Qwik GitHub](https://github.com/QwikDev/qwik)
-- [@QwikDev](https://twitter.com/QwikDev)
-- [Vite](https://vitejs.dev/)
+This repository demonstrates how to use the Intersection Observer API with Qwik framework to detect when elements become visible in the viewport.
 
----
+## Overview
 
-## Project Structure
+The `useIntersectionObserver` hook is a custom Qwik composable that provides a reactive way to track when elements enter or leave the viewport. This is particularly useful for:
 
-This project is using Qwik with [QwikCity](https://qwik.dev/qwikcity/overview/). QwikCity is just an extra set of tools on top of Qwik to make it easier to build a full site, including directory-based routing, layouts, and more.
+- Lazy loading images or components
+- Triggering animations when elements come into view
+- Implementing infinite scrolling
+- Tracking analytics for element visibility
+- Performance optimization by deferring content until needed
 
-Inside your project, you'll see the following directory structure:
+## Features
 
-```
-├── public/
-│   └── ...
-└── src/
-    ├── components/
-    │   └── ...
-    └── routes/
-        └── ...
-```
+- **Qwik Optimized**: Built with Qwik's reactivity system using signals
+- **Flexible Configuration**: Customizable IntersectionObserver options
+- **One-time Observation**: Option to stop observing after first intersection
+- **TypeScript Support**: Fully typed for better developer experience
+- **Cleanup Handling**: Automatic observer cleanup to prevent memory leaks
 
-- `src/routes`: Provides the directory-based routing, which can include a hierarchy of `layout.tsx` layout files, and an `index.tsx` file as the page. Additionally, `index.ts` files are endpoints. Please see the [routing docs](https://qwik.dev/qwikcity/routing/overview/) for more info.
+## Installation
 
-- `src/components`: Recommended directory for components.
-
-- `public`: Any static assets, like images, can be placed in the public directory. Please see the [Vite public directory](https://vitejs.dev/guide/assets.html#the-public-directory) for more info.
-
-## Add Integrations and deployment
-
-Use the `bun qwik add` command to add additional integrations. Some examples of integrations includes: Cloudflare, Netlify or Express Server, and the [Static Site Generator (SSG)](https://qwik.dev/qwikcity/guides/static-site-generation/).
-
-```shell
-bun qwik add # or `bun qwik add`
+```bash
+git clone <your-repo-url>
+cd <your-repo-name>
+npm install
 ```
 
-## Development
+## Usage
 
-Development mode uses [Vite's development server](https://vitejs.dev/). The `dev` command will server-side render (SSR) the output during development.
+### Basic Example
 
-```shell
-npm start # or `bun start`
+```tsx
+import { component$, useSignal } from '@builder.io/qwik';
+import { useIntersectionObserver } from './useIntersectionObserver';
+
+export default component$(() => {
+  const elementRef = useSignal<HTMLElement>();
+  const isVisible = useIntersectionObserver(elementRef, false);
+
+  return (
+    <div>
+      <div 
+        ref={elementRef}
+        class={`transition-opacity duration-500 ${
+          isVisible.value ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        This element will fade in when it becomes visible
+      </div>
+    </div>
+  );
+});
 ```
 
-> Note: during dev mode, Vite may request a significant number of `.js` files. This does not represent a Qwik production build.
+### One-time Observation
 
-## Preview
+```tsx
+import { component$, useSignal } from '@builder.io/qwik';
+import { useIntersectionObserver } from './useIntersectionObserver';
 
-The preview command will create a production build of the client modules, a production build of `src/entry.preview.tsx`, and run a local server. The preview server is only for convenience to preview a production build locally and should not be used as a production server.
+export default component$(() => {
+  const elementRef = useSignal<HTMLElement>();
+  // Only trigger once - when the element first becomes visible
+  const hasBeenSeen = useIntersectionObserver(elementRef, true);
 
-```shell
-bun preview # or `bun preview`
+  return (
+    <div>
+      {hasBeenSeen.value && (
+        <div ref={elementRef}>
+          This content only loads when it enters the viewport
+        </div>
+      )}
+    </div>
+  );
+});
 ```
 
-## Production
+### Custom Options
 
-The production build will generate client and server modules by running both client and server build commands. The build command will use Typescript to run a type check on the source code.
+```tsx
+import { component$, useSignal } from '@builder.io/qwik';
+import { useIntersectionObserver } from './useIntersectionObserver';
 
-```shell
-bun build # or `bun build`
+export default component$(() => {
+  const elementRef = useSignal<HTMLElement>();
+  
+  const options = {
+    threshold: 0.8, // Trigger when 80% visible
+    rootMargin: '50px', // Expand the root margin
+  };
+
+  const isMostlyVisible = useIntersectionObserver(elementRef, false, options);
+
+  return (
+    <div ref={elementRef}>
+      {isMostlyVisible.value ? '80% visible!' : 'Scroll more...'}
+    </div>
+  );
+});
 ```
+
+## API Reference
+
+### `useIntersectionObserver`
+
+```typescript
+function useIntersectionObserver(
+  elementREF: Signal<HTMLElement | undefined>,
+  onceObserver: boolean,
+  option?: IntersectionObserverInit
+): Signal<boolean | undefined>
+```
+
+#### Parameters
+
+- `elementREF`: A Qwik signal containing the HTML element to observe
+- `onceObserver`: If `true`, stops observing after the first intersection
+- `option`: Optional IntersectionObserver configuration
+  - `threshold`: Number between 0 and 1 indicating the percentage that should be visible before triggering
+  - `root`: The element that is used as the viewport
+  - `rootMargin`: Margin around the root (similar to CSS margin)
+
+#### Returns
+
+A reactive signal that updates with the intersection state (`true` when intersecting, `false` otherwise).
+
+## Qwik Specific Notes
+
+- Uses `useVisibleTask$` for DOM operations (runs only in the browser)
+- Implements proper cleanup with Qwik's `cleanup` function
+- Leverages Qwik signals for reactive state management
+- Follows Qwik's lazy loading principles for optimal performance
+
+## Browser Support
+
+The Intersection Observer API is supported in all modern browsers. For older browsers, consider adding a polyfill.
+
+## Contributing
+
+Feel free to submit issues, fork the repository, and create pull requests for any improvements.
+
+## License
+
+MIT License - feel free to use this code in your own projects!
